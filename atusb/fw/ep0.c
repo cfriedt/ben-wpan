@@ -93,6 +93,7 @@ static bool my_setup(const struct setup_request *setup)
 		debug("ATUSB_RESET\n");
 		reset_cpu();
 		while (1);
+		break;
 
 	case ATUSB_TO_DEV(ATUSB_RF_RESET):
 		debug("ATUSB_RF_RESET\n");

@@ -43,7 +43,7 @@
 
 
 #ifndef DFU_ALT_SETTINGS
-#define	DFU_ALT_SETTINGS	1
+#define	DFU_ALT_SETTINGS	3
 #endif
 
 #ifndef DFU_ALT_NAME_0_IDX
@@ -124,12 +124,12 @@ static bool block_receive(uint16_t length)
 	static uint16_t size;
 
 	if (!dfu_flash_ops->can_write(length)) {
-		dfu.state = dfuERROR;	
+		dfu.state = dfuERROR;
 		dfu.status = errADDRESS;
 		return 0;
 	}
 	if (length > EP0_SIZE) {
-		dfu.state = dfuERROR;	
+		dfu.state = dfuERROR;
 		dfu.status = errUNKNOWN;
 		return 0;
 	}
@@ -144,7 +144,7 @@ static bool block_transmit(uint16_t length)
 	uint16_t got;
 
 	if (length > EP0_SIZE) {
-		dfu.state = dfuERROR;	
+		dfu.state = dfuERROR;
 		dfu.status = errUNKNOWN;
 		return 1;
 	}
