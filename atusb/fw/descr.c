@@ -15,7 +15,6 @@
 #include "dfu.h"
 #include "board.h"
 
-
 #define LE(x) ((uint16_t) (x) & 0xff), ((uint16_t) (x) >> 8)
 
 /*
@@ -53,10 +52,12 @@ const uint8_t device_descriptor[18] = {
 const uint8_t config_descriptor[] = {
 	9,			/* bLength */
 	USB_DT_CONFIG,		/* bDescriptorType */
-#if 1
+#if defined( SUPPORT_BULK_IN ) && defined( SUPPORT_BULK_OUT )
 	LE(9+9+7+7+9),		/* wTotalLength */
-#else
+#elif defined( SUPPORT_BULK_IN ) || defined( SUPPORT_BULK_OUT )
 	LE(9+9+7+9),		/* wTotalLength */
+#else
+	LE(9+9+9),			/* wTotalLength */
 #endif
 	2,			/* bNumInterfaces */
 	1,			/* bConfigurationValue (> 0 !) */
@@ -70,17 +71,19 @@ const uint8_t config_descriptor[] = {
 	USB_DT_INTERFACE,	/* bDescriptorType */
 	0,			/* bInterfaceNumber */
 	0,			/* bAlternateSetting */
-#if 1
+#if defined( SUPPORT_BULK_IN ) && defined( SUPPORT_BULK_OUT )
 	2,			/* bNumEndpoints */
-#else
+#elif defined( SUPPORT_BULK_IN ) || defined( SUPPORT_BULK_OUT )
 	1,			/* bNumEndpoints */
+#else
+	0,			/* bNumEndpoints */
 #endif
 	USB_CLASS_VENDOR_SPEC,	/* bInterfaceClass */
 	0,			/* bInterfaceSubClass */
 	0,			/* bInterfaceProtocol */
 	0,			/* iInterface */
 
-#if 1
+#ifdef SUPPORT_BULK_OUT
 	/* EP OUT */
 
 	7,			/* bLength */
@@ -91,7 +94,7 @@ const uint8_t config_descriptor[] = {
 	0,			/* bInterval */
 #endif
 
-#if 1
+#ifdef SUPPORT_BULK_IN
 	/* EP IN */
 
 	7,			/* bLength */

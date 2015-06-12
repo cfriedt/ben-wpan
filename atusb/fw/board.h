@@ -73,6 +73,9 @@
 #define	NUM_EPS	2
 #endif
 
+#define SUPPORT_BULK_IN
+#define SUPPORT_BULK_OUT
+
 #define	HAS_BOARD_SERNUM
 
 extern uint8_t board_sernum[42];
