@@ -17,7 +17,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <usb.h>
+
+#include <libusb-1.0/libusb.h>
 
 #include "usbopen.h"
 
@@ -31,17 +32,25 @@ static uint16_t product = 0;
 static const struct usb_device *restricted_path = NULL;
 static int initialized = 0;
 
+static libusb_context *libusb_ctx;
 
 static void initialize(void)
 {
+	int res;
 
 	if (initialized)
 		return;
 	initialized = 1;
 
-	usb_init();
-	usb_find_busses();
-	usb_find_devices();
+	if ( NULL == libusb_ctx ) {
+		res = libusb_init( &libusb_ctx );
+		if (res < 0) {
+			fprintf(stderr, "libusb_init: %d\n", res);
+			exit(1);
+		}
+	}
+//	usb_find_busses();
+//	usb_find_devices();
 }
 
 
@@ -50,12 +59,11 @@ void usb_rescan(void)
 	initialized = 0;
 }
 
-
-usb_dev_handle *open_usb(uint16_t default_vendor, uint16_t default_product)
+libusb_device_handle *open_usb(uint16_t default_vendor, uint16_t default_product)
 {
 	const struct usb_bus *bus;
 	struct usb_device *dev;
-	usb_dev_handle *handle;
+	libusb_device_handle *handle;
 #ifdef DO_FULL_USB_BUREAUCRACY
 	int res;
 #endif
@@ -67,40 +75,43 @@ usb_dev_handle *open_usb(uint16_t default_vendor, uint16_t default_product)
 	if (!product)
 		product = default_product;
 
-	for (bus = usb_get_busses(); bus; bus = bus->next)
-		for (dev = bus->devices; dev; dev = dev->next) {
-			if (restricted_path && restricted_path != dev)
-				continue;
-			if (vendor && dev->descriptor.idVendor != vendor)
-				continue;
-			if (product && dev->descriptor.idProduct != product)
-				continue;
-			handle = usb_open(dev);
-#ifdef DO_FULL_USB_BUREAUCRACY
-			if (!handle)
-				return NULL;
-			res = usb_set_configuration(handle, 1);
-			if (res < 0) {
-				fprintf(stderr, "usb_set_configuration: %d\n",
-				    res);
-				return NULL;
-			}
-			res = usb_claim_interface(handle, 0);
-			if (res < 0) {
-				fprintf(stderr, "usb_claim_interface: %d\n",
-				    res);
-				return NULL;
-			}
-			res = usb_set_altinterface(handle, 0);
-			if (res < 0) {
-				fprintf(stderr, "usb_set_altinterface: %d\n",
-				    res);
-				return NULL;
-			}
-#endif
-			return handle;
-		}
-	return NULL;
+	handle = libusb_open_device_with_vid_pid( libusb_ctx, vendor, product );
+//
+//	for (bus = usb_get_busses(); bus; bus = bus->next)
+//		for (dev = bus->devices; dev; dev = dev->next) {
+//			if (restricted_path && restricted_path != dev)
+//				continue;
+//			if (vendor && dev->descriptor.idVendor != vendor)
+//				continue;
+//			if (product && dev->descriptor.idProduct != product)
+//				continue;
+//			handle = usb_open(dev);
+//#ifdef DO_FULL_USB_BUREAUCRACY
+//			if (!handle)
+//				return NULL;
+//			res = usb_set_configuration(handle, 1);
+//			if (res < 0) {
+//				fprintf(stderr, "usb_set_configuration: %d\n",
+//				    res);
+//				return NULL;
+//			}
+//			res = usb_claim_interface(handle, 0);
+//			if (res < 0) {
+//				fprintf(stderr, "usb_claim_interface: %d\n",
+//				    res);
+//				return NULL;
+//			}
+//			res = usb_set_altinterface(handle, 0);
+//			if (res < 0) {
+//				fprintf(stderr, "usb_set_altinterface: %d\n",
+//				    res);
+//				return NULL;
+//			}
+//#endif
+//			return handle;
+//		}
+//	return NULL;
+	return handle;
 }
 
 
@@ -144,22 +155,22 @@ void parse_usb_id(const char *id)
 
 static void restrict_usb_dev(int bus_num, int dev_num)
 {
-	const struct usb_bus *bus;
-	const struct usb_device *dev;
-
-	initialize();
-
-	for (bus = usb_busses; bus; bus = bus->next) {
-		if (atoi(bus->dirname) != bus_num)
-			continue;
-		for (dev = bus->devices; dev; dev = dev->next)
-			if (dev->devnum == dev_num) {
-				restricted_path = dev;
-				return;
-			}
-	}
-	fprintf(stderr, "no device %d/%d\n", bus_num, dev_num);
-	exit(1);
+//	const struct usb_bus *bus;
+//	const struct usb_device *dev;
+//
+//	initialize();
+//
+//	for (bus = usb_busses; bus; bus = bus->next) {
+//		if (atoi(bus->dirname) != bus_num)
+//			continue;
+//		for (dev = bus->devices; dev; dev = dev->next)
+//			if (dev->devnum == dev_num) {
+//				restricted_path = dev;
+//				return;
+//			}
+//	}
+//	fprintf(stderr, "no device %d/%d\n", bus_num, dev_num);
+//	exit(1);
 }
 
 

@@ -15,16 +15,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <usb.h>
+#include <libusb-1.0/libusb.h>
 #include <errno.h>
 
+#include "atusb/atusb.h"
 #include "atusb/ep0.h"
 
 #include "at86rf230.h"
 #include "usbopen.h"
 #include "driver.h"
 #include "atusb-common.h"
-
 
 /* ----- error handling ---------------------------------------------------- */
 
@@ -53,7 +53,7 @@ int atusb_clear_error(void *handle)
 
 void *atusb_open(const char *arg)
 {
-	usb_dev_handle *dev;
+	libusb_device_handle *dev;
 	struct atusb_dsc *dsc;
 	int res;
 
@@ -70,7 +70,7 @@ void *atusb_open(const char *arg)
 		return NULL;
 	}
 
-	res = usb_claim_interface(dev, 0);
+	res = libusb_claim_interface(dev, 0);
 	if (res == -EPERM) {
 		fprintf(stderr,
 		    "Permission denied. You may need to become root.\n");
@@ -114,7 +114,7 @@ void atusb_reset(void *handle)
 		return;
 
 	res =
-	    usb_control_msg(dsc->dev, TO_DEV, ATUSB_RESET, 0, 0, NULL, 0, 1000);
+	    libusb_control_transfer(dsc->dev, TO_DEV, ATUSB_RESET, 0, 0, NULL, 0, 1000);
 	if (res < 0) {
 		fprintf(stderr, "ATUSB_RESET: %d\n", res);
 		dsc->error = 1;
@@ -130,7 +130,7 @@ void atusb_reset_rf(void *handle)
 	if (dsc->error)
 		return;
 
-	res = usb_control_msg(dsc->dev, TO_DEV, ATUSB_RF_RESET, 0, 0, NULL,
+	res = libusb_control_transfer(dsc->dev, TO_DEV, ATUSB_RF_RESET, 0, 0, NULL,
 	    0, 1000);
 	if (res < 0) {
 		fprintf(stderr, "ATUSB_RF_RESET: %d\n", res);
@@ -148,7 +148,7 @@ void atusb_test_mode(void *handle)
 		return;
 
 	res =
-	    usb_control_msg(dsc->dev, TO_DEV, ATUSB_TEST, 0, 0, NULL, 0, 1000);
+	    libusb_control_transfer(dsc->dev, TO_DEV, ATUSB_TEST, 0, 0, NULL, 0, 1000);
 	if (res < 0) {
 		fprintf(stderr, "ATUSB_TEST: %d\n", res);
 		dsc->error = 1;
@@ -173,7 +173,7 @@ void atusb_slp_tr(void *handle, int on, int pulse)
 		return;
 	}
 
-	res = usb_control_msg(dsc->dev, TO_DEV, ATUSB_SLP_TR, 0, 0, NULL, 0,
+	res = libusb_control_transfer(dsc->dev, TO_DEV, ATUSB_SLP_TR, 0, 0, NULL, 0,
 	    1000);
 	if (res < 0) {
 		fprintf(stderr, "ATUSB_SLP_TR: %d\n", res);
@@ -203,8 +203,8 @@ void atusb_slp_tr(void *handle, int on, int pulse)
  * interrupt D		D	H	EP_IDLE		A		B+C
  * INT0 handler		-	-	EP_TX (D)	A		B+C
  * IN from host		-	-	EP_IDLE		A, D		B+C
- * usb_bulk_read	-	-	EP_IDLE		-		A+B+C+D
- * usb_bulk_read -> no more data, done
+ * libusb_bulk_transfer	-	-	EP_IDLE		-		A+B+C+D
+ * libusb_bulk_transfer -> no more data, done
  *
  * We therefore have to consider interrupts queued up at the host and pending
  * in REG_IRQ_STATUS in addition to anything that may arrive while we wait.
@@ -220,12 +220,13 @@ int atusb_interrupt_wait(void *handle, int timeout_ms)
 	if (dsc->error)
 		return 0;
 
-	res = usb_bulk_read(dsc->dev, 1,
-	    (char *) &buf, sizeof(buf), timeout_ms < 0 ? 0 : timeout_ms);
+	int actual_length;
+	res = libusb_bulk_transfer(dsc->dev, 1,
+	    (unsigned char *) &buf, sizeof(buf), &actual_length, timeout_ms < 0 ? 0 : timeout_ms);
 	if (res == -ETIMEDOUT)
 		return 0;
 	if (res < 0) {
-		fprintf(stderr, "usb_bulk_read: %d\n", res);
+		fprintf(stderr, "libusb_bulk_transfer: %d\n", res);
 		dsc->error = 1;
 		return 0; /* handle this via atrf_error */
 	}
@@ -251,10 +252,10 @@ int atusb_set_clkm(void *handle, int mhz)
 
 	if (dsc->error)
 		return 0;
-	res = usb_control_msg(dsc->dev, FROM_DEV, ATUSB_ID, 0, 0,
+	res = libusb_control_transfer(dsc->dev, FROM_DEV, ATUSB_ID, 0, 0,
 	    (void *) ids, 3, 1000);
 	if (res < 0) {
-		fprintf(stderr, "ATUSB_ID: %s\n", usb_strerror());
+		fprintf(stderr, "ATUSB_ID: %s\n", libusb_strerror(res));
 		dsc->error = 1;
 		return 0;
 	}
@@ -287,7 +288,7 @@ void atusb_rx_mode(void *handle, int on)
 	if (dsc->error)
 		return;
 
-	res = usb_control_msg(dsc->dev, TO_DEV, ATUSB_RX_MODE,
+	res = libusb_control_transfer(dsc->dev, TO_DEV, ATUSB_RX_MODE,
 	    on, 0, NULL, 0, 1000);
 	if (res < 0) {
 		fprintf(stderr, "ATUSB_RX_MODE: %d\n", res);
@@ -308,11 +309,12 @@ int atusb_rx(void *handle, void *buf, int size, int timeout_ms, uint8_t *lqi)
 	 * read of size one followed by the full read. Therefore, we just do
 	 * a maximum-sized read and hope that we don't split packets.
 	 */
-	res = usb_bulk_read(dsc->dev, 1, (char *) tmp, sizeof(tmp), timeout_ms);
+	int actual_length;
+	res = libusb_bulk_transfer(dsc->dev, 1, (unsigned char *) tmp, sizeof(tmp), &actual_length, timeout_ms);
 	if (res == -ETIMEDOUT)
 		return 0;
 	if (res < 0) {
-		fprintf(stderr, "usb_bulk_read: %d\n", res);
+		fprintf(stderr, "libusb_bulk_transfer: %d\n", res);
 		dsc->error = 1;
 		return 0;
 	}
@@ -348,15 +350,16 @@ void atusb_tx(void *handle, const void *buf, int size)
 	if (dsc->error)
 		return;
 
-	res = usb_control_msg(dsc->dev, TO_DEV, ATUSB_TX,
+	int actual_length;
+	res = libusb_control_transfer(dsc->dev, TO_DEV, ATUSB_TX,
 	    0, 0, (void *) buf, size, 1000);
 	if (res < 0) {
 		fprintf(stderr, "ATUSB_TX: %d\n", res);
 		dsc->error = 1;
 	}
-	res = usb_bulk_read(dsc->dev, 1, (char *) &tmp, 1, 0);
+	res = libusb_bulk_transfer(dsc->dev, 1, (unsigned char *) &tmp, 1, &actual_length, 0);
 	if (res < 0) {
-		fprintf(stderr, "usb_bulk_read: %d\n", res);
+		fprintf(stderr, "libusb_bulk_transfer: %d\n", res);
 		dsc->error = 1;
 		return;
 	}

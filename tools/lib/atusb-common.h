@@ -14,13 +14,14 @@
 #ifndef ATUSB_COMMON_H
 #define	ATUSB_COMMON_H
 
+#include <libusb-1.0/libusb.h>
 
 #define FROM_DEV        ATUSB_FROM_DEV(0)
 #define TO_DEV          ATUSB_TO_DEV(0)
 
 
 struct atusb_dsc {
-	usb_dev_handle *dev;
+	libusb_device_handle *dev;
 	int error;
 };
 

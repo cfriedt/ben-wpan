@@ -14,7 +14,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <usb.h>
+#include <libusb-1.0/libusb.h>
 
 #include "atusb/ep0.h"
 
@@ -34,7 +34,7 @@ static void atusb_reg_write(void *handle, uint8_t reg, uint8_t value)
 	if (dsc->error)
 		return;
 
-	res = usb_control_msg(dsc->dev, TO_DEV, ATUSB_REG_WRITE, value, reg,
+	res = libusb_control_transfer(dsc->dev, TO_DEV, ATUSB_REG_WRITE, value, reg,
 	    NULL, 0, 1000);
 	if (res < 0) {
 		fprintf(stderr, "ATUSB_REG_WRITE: %d\n", res);
@@ -52,7 +52,7 @@ static uint8_t atusb_reg_read(void *handle, uint8_t reg)
 	if (dsc->error)
 		return 0;
 
-	res = usb_control_msg(dsc->dev, FROM_DEV, ATUSB_REG_READ, 0, reg,
+	res = libusb_control_transfer(dsc->dev, FROM_DEV, ATUSB_REG_READ, 0, reg,
 	    (void *) &value, 1, 1000);
 	if (res < 0) {
 		fprintf(stderr, "ATUSB_REG_READ: %d\n", res);
@@ -73,7 +73,7 @@ static void atusb_buf_write(void *handle, const void *buf, int size)
 	if (dsc->error)
 		return;
 
-	res = usb_control_msg(dsc->dev, TO_DEV, ATUSB_BUF_WRITE, 0, 0,
+	res = libusb_control_transfer(dsc->dev, TO_DEV, ATUSB_BUF_WRITE, 0, 0,
 	    (void *) buf, size, 1000);
 	if (res < 0) {
 		fprintf(stderr, "ATUSB_BUF_WRITE: %d\n", res);
@@ -90,7 +90,7 @@ static int atusb_buf_read(void *handle, void *buf, int size)
 	if (dsc->error)
 		return -1;
 
-	res = usb_control_msg(dsc->dev, FROM_DEV, ATUSB_BUF_READ, 0, 0,
+	res = libusb_control_transfer(dsc->dev, FROM_DEV, ATUSB_BUF_READ, 0, 0,
 	    buf, size, 1000);
 	if (res < 0) {
 		fprintf(stderr, "ATUSB_BUF_READ: %d\n", res);
@@ -112,7 +112,7 @@ static void atusb_sram_write(void *handle, uint8_t addr, uint8_t value)
 	if (dsc->error)
 		return;
 
-	res = usb_control_msg(dsc->dev, TO_DEV, ATUSB_SRAM_WRITE, 0, addr,
+	res = libusb_control_transfer(dsc->dev, TO_DEV, ATUSB_SRAM_WRITE, 0, addr,
 	    &value, 1, 1000);
 	if (res < 0) {
 		fprintf(stderr, "ATUSB_SRAM_WRITE: %d\n", res);
@@ -130,7 +130,7 @@ static uint8_t atusb_sram_read(void *handle, uint8_t addr)
 	if (dsc->error)
 		return 0;
 
-	res = usb_control_msg(dsc->dev, FROM_DEV, ATUSB_SRAM_READ, 0, addr,
+	res = libusb_control_transfer(dsc->dev, FROM_DEV, ATUSB_SRAM_READ, 0, addr,
 	    (void *) &value, 1, 1000);
 	if (res < 0) {
 		fprintf(stderr, "ATUSB_SRAM_READ: %d\n", res);

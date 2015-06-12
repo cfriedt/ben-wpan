@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <usb.h>
+#include <libusb-1.0/libusb.h>
 
 #include "atusb/ep0.h"
 
@@ -33,7 +33,7 @@ static void atusb_spi_reg_write(void *handle, uint8_t reg, uint8_t v)
 	if (dsc->error)
 		return;
 
-	res = usb_control_msg(dsc->dev, TO_DEV, ATUSB_SPI_WRITE,
+	res = libusb_control_transfer(dsc->dev, TO_DEV, ATUSB_SPI_WRITE,
 	    AT86RF230_REG_WRITE | reg, v, NULL, 0, 1000);
 	if (res < 0) {
 		fprintf(stderr, "ATUSB_SPI_WRITE: %d\n", res);
@@ -51,7 +51,7 @@ static uint8_t atusb_spi_reg_read(void *handle, uint8_t reg)
 	if (dsc->error)
 		return 0;
 
-	res = usb_control_msg(dsc->dev, FROM_DEV, ATUSB_SPI_READ1,
+	res = libusb_control_transfer(dsc->dev, FROM_DEV, ATUSB_SPI_READ1,
 	    AT86RF230_REG_READ | reg, 0, (void *) &value, 1, 1000);
 	if (res < 0) {
 		fprintf(stderr, "ATUSB_SPI_READ1: %d\n", res);
@@ -69,7 +69,7 @@ static void atusb_spi_buf_write(void *handle, const void *buf, int size)
 	if (dsc->error)
 		return;
 
-	res = usb_control_msg(dsc->dev, TO_DEV, ATUSB_SPI_WRITE,
+	res = libusb_control_transfer(dsc->dev, TO_DEV, ATUSB_SPI_WRITE,
 	    AT86RF230_BUF_WRITE, size, (void *) buf, size, 1000);
 	if (res < 0) {
 		fprintf(stderr, "ATUSB_SPI_WRITE: %d\n", res);
@@ -87,7 +87,7 @@ static int atusb_spi_buf_read(void *handle, void *buf, int size)
 	if (dsc->error)
 		return -1;
 
-	res = usb_control_msg(dsc->dev, FROM_DEV, ATUSB_SPI_READ1,
+	res = libusb_control_transfer(dsc->dev, FROM_DEV, ATUSB_SPI_READ1,
 	    AT86RF230_BUF_READ, 0, tmp, sizeof(tmp), 1000);
 	if (res < 0) {
 		fprintf(stderr, "ATUSB_SPI_READ1: %d\n", res);
@@ -120,7 +120,7 @@ static void atusb_spi_sram_write(void *handle, uint8_t addr, uint8_t v)
 	if (dsc->error)
 		return;
 
-	res = usb_control_msg(dsc->dev, TO_DEV, ATUSB_SPI_WRITE,
+	res = libusb_control_transfer(dsc->dev, TO_DEV, ATUSB_SPI_WRITE,
 	    AT86RF230_SRAM_WRITE, addr, &v, 1, 1000);
 	if (res < 0) {
 		fprintf(stderr, "ATUSB_SPI_WRITE: %d\n", res);
@@ -138,7 +138,7 @@ static uint8_t atusb_spi_sram_read(void *handle, uint8_t addr)
 	if (dsc->error)
 		return 0;
 
-	res = usb_control_msg(dsc->dev, FROM_DEV, ATUSB_SPI_READ2,
+	res = libusb_control_transfer(dsc->dev, FROM_DEV, ATUSB_SPI_READ2,
 	    AT86RF230_SRAM_READ, addr, (void *) &value, 1, 1000);
 	if (res < 0) {
 		fprintf(stderr, "ATUSB_SPI_READ2: %d\n", res);

@@ -12,6 +12,7 @@
 
 
 #include <stdarg.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -298,7 +299,7 @@ static uint8_t atnet_reg_read(void *handle, uint8_t reg)
 	char *end;
 
 	if (dsc->error)
-		return;
+		return 0;
 	if (dialog(dsc, "GET 0x%02x", reg) < 0) {
 		dsc->error = 1;
 		return 0;
@@ -377,7 +378,7 @@ static int atnet_buf_read(void *handle, void *buf, int size)
 	}
 	if (*tmp != '+' || n < 2) /* +0<spc> */
 		goto invalid;
-	len = strtoul(tmp+1, &end, 0);
+	len = strtoul((const char *)(tmp+1), &end, 0);
 	if (*end)
 		goto invalid;
 	if (len > size) {
@@ -423,7 +424,7 @@ static uint8_t atnet_sram_read(void *handle, uint8_t addr)
 	char *end;
 
 	if (dsc->error)
-		return;
+		return 0;
 	if (dialog(dsc, "GETRAM 0x%02x", addr) < 0) {
 		dsc->error = 1;
 		return 0;
