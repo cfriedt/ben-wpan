@@ -26,7 +26,7 @@ CFLAGS_host =
 CFLAGS_ben_jlime =
 CFLAGS_ben_openwrt =
 
-LDLIBS_host = -lusb
+LDLIBS_host = -lusb-1.0
 LDLIBS_ben_jlime =
 LDLIBS_ben_openwrt =
 

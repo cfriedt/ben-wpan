@@ -12,9 +12,10 @@
 
 
 #include <stdlib.h>
+#include <unistd.h>
 #include <stdio.h>
 
-#include <usb.h>
+#include <libusb-1.0/libusb.h>
 
 #include "atusb/ep0.h"
 #include "atrf.h"
@@ -61,12 +62,12 @@ static uint8_t gpio(struct atrf_dsc *dsc,
 	uint8_t buf[3];
 	int res;
 
-	res = usb_control_msg(atrf_usb_handle(dsc),
+	res = libusb_control_transfer(atrf_usb_handle(dsc),
             FROM_DEV, ATUSB_GPIO, *dir << 8 | *data, mask << 8 | port,
 	    (void *) buf, sizeof(buf), 1000);
 	if (res < 0) {
 		dump_port(port-1, *data, *dir, mask);
-		fprintf(stderr, "ATUSB_GPIO: %s\n", usb_strerror());
+		fprintf(stderr, "ATUSB_GPIO: %s\n", libusb_strerror(res));
 		_exit(1);
 	}
 	if (res != 3) {
@@ -111,10 +112,10 @@ static void restore_gpios(void)
 	for (i = 0; i != 3; i++)
 		gpio(orig_dsc, i+1, orig_data+i, orig_dir+i, 0xff);
 
-	res = usb_control_msg(atrf_usb_handle(orig_dsc),
+	res = libusb_control_transfer(atrf_usb_handle(orig_dsc),
 	    TO_DEV, ATUSB_GPIO_CLEANUP, 0, 0, NULL, 0, 1000);
 	if (res < 0) {
-		fprintf(stderr, "ATUSB_GPIO_CLEANUP: %s\n", usb_strerror());
+		fprintf(stderr, "ATUSB_GPIO_CLEANUP: %s\n", libusb_strerror(res));
 		_exit(1);
 	}
 }
